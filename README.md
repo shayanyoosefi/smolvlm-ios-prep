@@ -24,6 +24,7 @@ pip install -e ".[download,validate]"
 smolvlm-ios-prep inspect
 smolvlm-ios-prep prepare --output artifacts/ios/smolvlm-256m-instruct-q4f16
 smolvlm-ios-prep validate artifacts/ios/smolvlm-256m-instruct-q4f16 --load-onnx
+smolvlm-ios-prep contract artifacts/ios/smolvlm-256m-instruct-q4f16
 ```
 
 If the model is already downloaded locally, skip network access:
@@ -58,6 +59,9 @@ artifacts/ios/smolvlm-256m-instruct-q4f16/
 The iOS app should read `manifest.json` first. It records the model id,
 revision, expected runtime, prompt template notes, file roles, SHA-256 hashes,
 and missing optional files.
+
+For app-side wiring, see `docs/ios-integration.md` and the Swift manifest
+loader template in `templates/ios/SmolVLMArtifactManifest.swift`.
 
 ## Commands
 
@@ -98,6 +102,15 @@ optimization because some quantized SmolVLM exports can hit ONNX Runtime fusion
 bugs during session creation. Use `--onnx-optimization all` only when you want
 to test the exact default optimized ONNX Runtime path. Requires
 `pip install -e ".[validate]"` for `--load-onnx`.
+
+```bash
+smolvlm-ios-prep contract artifacts/ios/smolvlm-256m-instruct-q4f16
+```
+
+Writes `ios_contract.json` and `IOS_INTEGRATION_CONTRACT.md` next to the
+artifact manifest. These files summarize file roles, preprocessing settings,
+token/model constants, ONNX input/output metadata, and the app-side integration
+sequence.
 
 ## iOS Runtime Assumptions
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from smolvlm_ios_prep.contract import build_contract, write_contract
 from smolvlm_ios_prep.config import ModelConfig
 from smolvlm_ios_prep.package import package_artifacts
 from smolvlm_ios_prep.validate import _optimization_level, validate_package
@@ -95,6 +96,76 @@ class PackageValidateTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             _optimization_level(FakeOrt, "surprise")
+
+    def test_contract_generation_without_onnx_load(self) -> None:
+        config = ModelConfig.from_dict(
+            {
+                "name": "test-model",
+                "model_id": "example/model",
+                "revision": "main",
+                "target": "onnx-runtime-ios",
+                "artifacts": [
+                    {
+                        "role": "model_config",
+                        "source": "config.json",
+                        "destination": "processor/config.json",
+                        "required": True,
+                    },
+                    {
+                        "role": "image_processor",
+                        "source": "preprocessor_config.json",
+                        "destination": "processor/preprocessor_config.json",
+                        "required": True,
+                    },
+                    {
+                        "role": "tokenizer_config",
+                        "source": "tokenizer_config.json",
+                        "destination": "tokenizer/tokenizer_config.json",
+                        "required": True,
+                    },
+                ],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source"
+            package = root / "package"
+            source.mkdir()
+            (source / "config.json").write_text(
+                json.dumps(
+                    {
+                        "architectures": ["Idefics3ForConditionalGeneration"],
+                        "model_type": "idefics3",
+                        "image_token_id": 49190,
+                        "text_config": {
+                            "hidden_size": 576,
+                            "vocab_size": 49280,
+                            "num_hidden_layers": 30,
+                            "num_key_value_heads": 3,
+                            "head_dim": 64,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (source / "preprocessor_config.json").write_text(
+                json.dumps({"processor_class": "Idefics3Processor", "image_mean": [0.5, 0.5, 0.5]}),
+                encoding="utf-8",
+            )
+            (source / "tokenizer_config.json").write_text(
+                json.dumps({"eos_token": "<|im_end|>"}),
+                encoding="utf-8",
+            )
+            package_artifacts(config, source, package)
+
+            contract = build_contract(package, load_onnx=False)
+            self.assertEqual(contract["model"]["image_token_id"], 49190)
+            self.assertEqual(contract["processor"]["processor_class"], "Idefics3Processor")
+
+            outputs = write_contract(package, load_onnx=False)
+            self.assertTrue(outputs["json"].is_file())
+            self.assertTrue(outputs["markdown"].is_file())
 
 
 if __name__ == "__main__":

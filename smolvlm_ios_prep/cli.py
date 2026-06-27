@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 from .config import DEFAULT_CONFIG_PATH, ModelConfig
+from .contract import ContractError, write_contract
 from .download import DownloadError, download_artifacts
 from .package import PackageError, package_artifacts
 from .validate import validate_package
@@ -17,7 +18,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return args.func(args)
-    except (DownloadError, PackageError, FileNotFoundError, ValueError) as exc:
+    except (ContractError, DownloadError, PackageError, FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -104,6 +105,30 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--json", action="store_true", help="Print the full validation report as JSON.")
     validate_parser.set_defaults(func=_cmd_validate)
 
+    contract_parser = subparsers.add_parser(
+        "contract",
+        help="Generate iOS integration contract files for a package.",
+    )
+    contract_parser.add_argument("package_dir", type=Path)
+    contract_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Where to write ios_contract.json and IOS_INTEGRATION_CONTRACT.md. Default: package_dir.",
+    )
+    contract_parser.add_argument(
+        "--skip-onnx",
+        action="store_true",
+        help="Do not load ONNX sessions while generating the contract.",
+    )
+    contract_parser.add_argument(
+        "--onnx-optimization",
+        choices=["disabled", "basic", "extended", "all"],
+        default="disabled",
+        help="Graph optimization level used while collecting ONNX IO metadata.",
+    )
+    contract_parser.set_defaults(func=_cmd_contract)
+
     return parser
 
 
@@ -183,6 +208,18 @@ def _cmd_validate(args: argparse.Namespace) -> int:
             for error in report["errors"]:
                 print(f"- {error}")
     return 0 if report["ok"] else 1
+
+
+def _cmd_contract(args: argparse.Namespace) -> int:
+    outputs = write_contract(
+        args.package_dir,
+        args.output_dir,
+        load_onnx=not args.skip_onnx,
+        onnx_optimization=args.onnx_optimization,
+    )
+    print(f"contract_json={outputs['json']}")
+    print(f"contract_markdown={outputs['markdown']}")
+    return 0
 
 
 def _print_status_counts(label: str, statuses: dict[str, str]) -> None:
