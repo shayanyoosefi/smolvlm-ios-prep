@@ -93,12 +93,18 @@ smolvlm-ios-prep validate artifacts/ios/smolvlm-256m-instruct-q4f16 --load-onnx
 ```
 
 Checks required files, verifies manifest hashes, and optionally tries to load
-each ONNX model with ONNX Runtime. Requires `pip install -e ".[validate]"` for
-`--load-onnx`.
+each ONNX model with ONNX Runtime. `--load-onnx` defaults to disabled graph
+optimization because some quantized SmolVLM exports can hit ONNX Runtime fusion
+bugs during session creation. Use `--onnx-optimization all` only when you want
+to test the exact default optimized ONNX Runtime path. Requires
+`pip install -e ".[validate]"` for `--load-onnx`.
 
 ## iOS Runtime Assumptions
 
 - Start with ONNX Runtime Mobile or full ONNX Runtime for iOS.
+- For the default `q4f16` package, start session creation with graph
+  optimizations disabled. Re-enable optimizations model by model only after
+  testing on the target ONNX Runtime build.
 - The app owns the autoregressive decode loop and KV-cache feeding.
 - The app must apply the tokenizer chat template and image preprocessing values
   from the packaged processor/tokenizer files.

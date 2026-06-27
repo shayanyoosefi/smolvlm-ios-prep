@@ -8,6 +8,7 @@
     "ios_minimum": "17.0",
     "notes": [
       "The iOS app owns the autoregressive decoder loop.",
+      "Create ONNX Runtime sessions with graph optimizations disabled first; some q4f16 exports can trip runtime fusions.",
       "Keep external ONNX data files next to their parent ONNX files.",
       "Tokenizer and image processor files are part of the runtime contract."
     ]

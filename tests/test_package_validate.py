@@ -7,7 +7,7 @@ import unittest
 
 from smolvlm_ios_prep.config import ModelConfig
 from smolvlm_ios_prep.package import package_artifacts
-from smolvlm_ios_prep.validate import validate_package
+from smolvlm_ios_prep.validate import _optimization_level, validate_package
 
 
 class PackageValidateTests(unittest.TestCase):
@@ -86,7 +86,16 @@ class PackageValidateTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertTrue(any("Hash mismatch" in error for error in report["errors"]))
 
+    def test_optimization_level_rejects_unknown_value(self) -> None:
+        class FakeGraphOptimizationLevel:
+            ORT_DISABLE_ALL = object()
+
+        class FakeOrt:
+            GraphOptimizationLevel = FakeGraphOptimizationLevel
+
+        with self.assertRaises(ValueError):
+            _optimization_level(FakeOrt, "surprise")
+
 
 if __name__ == "__main__":
     unittest.main()
-

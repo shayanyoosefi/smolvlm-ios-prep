@@ -10,7 +10,12 @@ class ValidationError(RuntimeError):
     """Raised when artifact validation fails."""
 
 
-def validate_package(package_dir: Path, *, load_onnx: bool = False) -> dict[str, Any]:
+def validate_package(
+    package_dir: Path,
+    *,
+    load_onnx: bool = False,
+    onnx_optimization: str = "disabled",
+) -> dict[str, Any]:
     manifest = load_manifest(package_dir)
     checks: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -45,7 +50,7 @@ def validate_package(package_dir: Path, *, load_onnx: bool = False) -> dict[str,
             errors.append(f"Size mismatch: {relative_path}")
 
         if load_onnx and relative_path.endswith(".onnx"):
-            load_result = _load_onnx(path)
+            load_result = _load_onnx(path, optimization=onnx_optimization)
             check["onnx_load"] = load_result
             if not load_result["ok"]:
                 errors.append(f"ONNX load failed for {relative_path}: {load_result['error']}")
@@ -62,7 +67,7 @@ def validate_package(package_dir: Path, *, load_onnx: bool = False) -> dict[str,
     }
 
 
-def _load_onnx(path: Path) -> dict[str, Any]:
+def _load_onnx(path: Path, *, optimization: str = "disabled") -> dict[str, Any]:
     try:
         import onnxruntime as ort
     except ImportError as exc:
@@ -73,7 +78,13 @@ def _load_onnx(path: Path) -> dict[str, Any]:
         }
 
     try:
-        session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+        session_options = ort.SessionOptions()
+        session_options.graph_optimization_level = _optimization_level(ort, optimization)
+        session = ort.InferenceSession(
+            str(path),
+            sess_options=session_options,
+            providers=["CPUExecutionProvider"],
+        )
     except Exception as exc:  # pragma: no cover - depends on optional runtime internals
         return {
             "ok": False,
@@ -83,6 +94,7 @@ def _load_onnx(path: Path) -> dict[str, Any]:
 
     return {
         "ok": True,
+        "optimization": optimization,
         "inputs": [
             {"name": item.name, "shape": item.shape, "type": item.type}
             for item in session.get_inputs()
@@ -93,3 +105,16 @@ def _load_onnx(path: Path) -> dict[str, Any]:
         ],
     }
 
+
+def _optimization_level(ort: Any, optimization: str) -> Any:
+    levels = {
+        "disabled": "ORT_DISABLE_ALL",
+        "basic": "ORT_ENABLE_BASIC",
+        "extended": "ORT_ENABLE_EXTENDED",
+        "all": "ORT_ENABLE_ALL",
+    }
+    try:
+        return getattr(ort.GraphOptimizationLevel, levels[optimization])
+    except KeyError as exc:
+        choices = ", ".join(sorted(levels))
+        raise ValueError(f"Unsupported ONNX optimization level '{optimization}'. Choose one of: {choices}") from exc

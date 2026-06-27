@@ -92,6 +92,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also try to load ONNX files with ONNX Runtime.",
     )
+    validate_parser.add_argument(
+        "--onnx-optimization",
+        choices=["disabled", "basic", "extended", "all"],
+        default="disabled",
+        help=(
+            "Graph optimization level used for --load-onnx. Defaults to disabled "
+            "because some quantized SmolVLM exports trip ONNX Runtime fusions."
+        ),
+    )
     validate_parser.add_argument("--json", action="store_true", help="Print the full validation report as JSON.")
     validate_parser.set_defaults(func=_cmd_validate)
 
@@ -157,7 +166,11 @@ def _cmd_prepare(args: argparse.Namespace) -> int:
 
 
 def _cmd_validate(args: argparse.Namespace) -> int:
-    report = validate_package(args.package_dir, load_onnx=args.load_onnx)
+    report = validate_package(
+        args.package_dir,
+        load_onnx=args.load_onnx,
+        onnx_optimization=args.onnx_optimization,
+    )
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
