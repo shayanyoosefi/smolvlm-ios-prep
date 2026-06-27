@@ -19,12 +19,13 @@ template. The ONNX package makes that boundary explicit first.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[download,validate]"
+pip install -e ".[download,validate,fixtures]"
 
 smolvlm-ios-prep inspect
 smolvlm-ios-prep prepare --output artifacts/ios/smolvlm-256m-instruct-q4f16
 smolvlm-ios-prep validate artifacts/ios/smolvlm-256m-instruct-q4f16 --load-onnx
 smolvlm-ios-prep contract artifacts/ios/smolvlm-256m-instruct-q4f16
+smolvlm-ios-prep fixture artifacts/ios/smolvlm-256m-instruct-q4f16
 ```
 
 If the model is already downloaded locally, skip network access:
@@ -111,6 +112,17 @@ Writes `ios_contract.json` and `IOS_INTEGRATION_CONTRACT.md` next to the
 artifact manifest. These files summarize file roles, preprocessing settings,
 token/model constants, ONNX input/output metadata, and the app-side integration
 sequence.
+
+```bash
+smolvlm-ios-prep fixture artifacts/ios/smolvlm-256m-instruct-q4f16
+```
+
+Writes a deterministic prompt/image fixture under `validation/fixtures/`.
+Requires `pip install -e ".[fixtures]"`. The fixture contains the exact rendered
+chat prompt plus Hugging Face-generated `input_ids`, `attention_mask`,
+`pixel_values`, and `pixel_attention_mask` arrays as `.npy` files. Use it to
+test iOS tokenizer and image preprocessing parity before debugging the ONNX
+decoder loop.
 
 ## iOS Runtime Assumptions
 

@@ -7,6 +7,7 @@ import unittest
 
 from smolvlm_ios_prep.contract import build_contract, write_contract
 from smolvlm_ios_prep.config import ModelConfig
+from smolvlm_ios_prep.fixture import _messages, _token_positions
 from smolvlm_ios_prep.package import package_artifacts
 from smolvlm_ios_prep.validate import _optimization_level, validate_package
 
@@ -166,6 +167,18 @@ class PackageValidateTests(unittest.TestCase):
             outputs = write_contract(package, load_onnx=False)
             self.assertTrue(outputs["json"].is_file())
             self.assertTrue(outputs["markdown"].is_file())
+
+    def test_fixture_message_shape(self) -> None:
+        messages = _messages("What is shown?")
+        self.assertEqual(messages[0]["role"], "user")
+        self.assertEqual(messages[0]["content"][0]["type"], "image")
+        self.assertEqual(messages[0]["content"][1]["text"], "What is shown?")
+
+    def test_token_positions(self) -> None:
+        import numpy as np
+
+        positions = _token_positions(np.asarray([[1, 49190, 2, 49190]]), 49190, np)
+        self.assertEqual(positions, [[0, 1], [0, 3]])
 
 
 if __name__ == "__main__":

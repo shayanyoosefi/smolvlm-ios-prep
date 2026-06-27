@@ -21,9 +21,19 @@ download = [
 validate = [
   "onnxruntime>=1.17",
 ]
+fixtures = [
+  "Jinja2>=3.1",
+  "numpy>=1.24",
+  "Pillow>=10",
+  "transformers>=4.46,<5",
+]
 dev = [
   "huggingface-hub>=0.23",
+  "Jinja2>=3.1",
+  "numpy>=1.24",
   "onnxruntime>=1.17",
+  "Pillow>=10",
+  "transformers>=4.46,<5",
 ]
 
 [project.scripts]
@@ -34,4 +44,3 @@ include = ["smolvlm_ios_prep*"]
 
 [tool.setuptools.package-data]
 smolvlm_ios_prep = ["py.typed"]
-

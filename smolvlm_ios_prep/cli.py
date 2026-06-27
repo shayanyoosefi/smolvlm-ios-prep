@@ -8,6 +8,7 @@ import sys
 from .config import DEFAULT_CONFIG_PATH, ModelConfig
 from .contract import ContractError, write_contract
 from .download import DownloadError, download_artifacts
+from .fixture import FixtureError, write_fixture
 from .package import PackageError, package_artifacts
 from .validate import validate_package
 
@@ -18,7 +19,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return args.func(args)
-    except (ContractError, DownloadError, PackageError, FileNotFoundError, ValueError) as exc:
+    except (ContractError, DownloadError, FixtureError, PackageError, FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -129,6 +130,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
     contract_parser.set_defaults(func=_cmd_contract)
 
+    fixture_parser = subparsers.add_parser(
+        "fixture",
+        help="Generate Hugging Face preprocessing/tokenizer fixtures for iOS parity tests.",
+    )
+    fixture_parser.add_argument("package_dir", type=Path)
+    fixture_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("validation/fixtures/smolvlm-256m-instruct-q4f16"),
+    )
+    fixture_parser.add_argument(
+        "--prompt",
+        default="Describe the image in one short sentence.",
+        help="User text prompt to pair with the fixture image.",
+    )
+    fixture_parser.add_argument(
+        "--image",
+        type=Path,
+        default=None,
+        help="Optional source image. A deterministic PNG fixture is generated if omitted.",
+    )
+    fixture_parser.add_argument(
+        "--no-generation-prompt",
+        action="store_true",
+        help="Do not append the assistant generation prompt in the chat template.",
+    )
+    fixture_parser.set_defaults(func=_cmd_fixture)
+
     return parser
 
 
@@ -219,6 +248,21 @@ def _cmd_contract(args: argparse.Namespace) -> int:
     )
     print(f"contract_json={outputs['json']}")
     print(f"contract_markdown={outputs['markdown']}")
+    return 0
+
+
+def _cmd_fixture(args: argparse.Namespace) -> int:
+    manifest = write_fixture(
+        args.package_dir,
+        args.output_dir,
+        prompt=args.prompt,
+        image_path=args.image,
+        add_generation_prompt=not args.no_generation_prompt,
+    )
+    print(f"fixture_dir={args.output_dir}")
+    print(f"fixture_manifest={args.output_dir / 'fixture_manifest.json'}")
+    for name, tensor in sorted(manifest["tensors"].items()):
+        print(f"tensor={name} shape={tensor['shape']} dtype={tensor['dtype']}")
     return 0
 
 

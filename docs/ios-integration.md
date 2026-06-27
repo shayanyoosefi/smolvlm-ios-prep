@@ -11,6 +11,7 @@ After running:
 ```bash
 smolvlm-ios-prep prepare --output artifacts/ios/smolvlm-256m-instruct-q4f16
 smolvlm-ios-prep contract artifacts/ios/smolvlm-256m-instruct-q4f16
+smolvlm-ios-prep fixture artifacts/ios/smolvlm-256m-instruct-q4f16
 ```
 
 copy or bundle the whole artifact directory unchanged:
@@ -92,3 +93,21 @@ generated Markdown summarizes:
 - ONNX input and output names, shapes, and dtypes
 - decoder KV-cache interface
 
+## Preprocessing Fixture
+
+The `fixture` command writes Hugging Face-generated reference tensors under
+`validation/fixtures/smolvlm-256m-instruct-q4f16/` by default. Use these files
+as the first iOS unit test target:
+
+```text
+fixture_manifest.json
+rendered_prompt.txt
+input_ids.npy
+attention_mask.npy
+pixel_values.npy
+pixel_attention_mask.npy
+```
+
+The Swift runtime should match the prompt, token ids, image-token positions,
+pixel tensor shape, and pixel attention mask before the app tries to run the
+decoder loop.
