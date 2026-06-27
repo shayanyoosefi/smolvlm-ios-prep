@@ -1,0 +1,97 @@
+{
+  "name": "smolvlm-256m-instruct-fp32",
+  "model_id": "HuggingFaceTB/SmolVLM-256M-Instruct",
+  "revision": "main",
+  "target": "onnx-runtime-ios",
+  "runtime": {
+    "engine": "onnxruntime",
+    "ios_minimum": "17.0",
+    "notes": [
+      "This config uses the largest fp32 ONNX files and is mainly for parity checks.",
+      "The iOS app owns the autoregressive decoder loop.",
+      "Tokenizer and image processor files are part of the runtime contract."
+    ]
+  },
+  "prompting": {
+    "chat_template_source": "tokenizer_config.json",
+    "image_token": "<image>",
+    "notes": [
+      "Use the tokenizer chat template from tokenizer_config.json when present.",
+      "The packaged files do not replace app-side prompt assembly."
+    ]
+  },
+  "artifacts": [
+    {
+      "role": "vision_encoder",
+      "source": "onnx/vision_encoder.onnx",
+      "destination": "models/vision_encoder.onnx",
+      "required": true
+    },
+    {
+      "role": "token_embedding",
+      "source": "onnx/embed_tokens.onnx",
+      "destination": "models/embed_tokens.onnx",
+      "required": true
+    },
+    {
+      "role": "decoder",
+      "source": "onnx/decoder_model_merged.onnx",
+      "destination": "models/decoder_model_merged.onnx",
+      "required": true
+    },
+    {
+      "role": "model_config",
+      "source": "config.json",
+      "destination": "processor/config.json",
+      "required": true
+    },
+    {
+      "role": "generation_config",
+      "source": "generation_config.json",
+      "destination": "processor/generation_config.json",
+      "required": false
+    },
+    {
+      "role": "image_processor",
+      "source": "preprocessor_config.json",
+      "destination": "processor/preprocessor_config.json",
+      "required": true
+    },
+    {
+      "role": "processor_config",
+      "source": "processor_config.json",
+      "destination": "processor/processor_config.json",
+      "required": false
+    },
+    {
+      "role": "tokenizer",
+      "source": "tokenizer.json",
+      "destination": "tokenizer/tokenizer.json",
+      "required": true
+    },
+    {
+      "role": "tokenizer_config",
+      "source": "tokenizer_config.json",
+      "destination": "tokenizer/tokenizer_config.json",
+      "required": true
+    },
+    {
+      "role": "special_tokens",
+      "source": "special_tokens_map.json",
+      "destination": "tokenizer/special_tokens_map.json",
+      "required": false
+    },
+    {
+      "role": "added_tokens",
+      "source": "added_tokens.json",
+      "destination": "tokenizer/added_tokens.json",
+      "required": false
+    },
+    {
+      "role": "chat_template",
+      "source": "chat_template.json",
+      "destination": "tokenizer/chat_template.json",
+      "required": false
+    }
+  ]
+}

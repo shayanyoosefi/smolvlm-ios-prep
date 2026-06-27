@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smolvlm-ios-prep"
+version = "0.1.0"
+description = "Prepare SmolVLM artifacts for an iOS app."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "smolvlm-ios-prep contributors" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+download = [
+  "huggingface-hub>=0.23",
+]
+validate = [
+  "onnxruntime>=1.17",
+]
+dev = [
+  "huggingface-hub>=0.23",
+  "onnxruntime>=1.17",
+]
+
+[project.scripts]
+smolvlm-ios-prep = "smolvlm_ios_prep.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["smolvlm_ios_prep*"]
+
+[tool.setuptools.package-data]
+smolvlm_ios_prep = ["py.typed"]
+
